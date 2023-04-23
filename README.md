@@ -24,7 +24,7 @@ There's 4 main commands :
 
 ## Configuration
 
-<details>
+<details open>
     <summary>Required configuration keys</summary>
 
 There's three required configuration key :
@@ -53,7 +53,7 @@ There's two optional configuration key :
 
 <br>
 
-<details>
+<details open>
     <summary>Tasks</summary>
 
 Also you can define custom tasks (like `npm` scripts) :
