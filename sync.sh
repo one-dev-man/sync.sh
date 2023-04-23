@@ -173,7 +173,7 @@ __task_shell () {
 
 main () {
     if [ "$1" == "" ]; then
-        utils.error "Syntax error : sync.sh [init | sync | shell | <taskname>] | sync.sh remote \"command\""
+        utils.error "Syntax error : sync.sh [init | sync | shell | <taskname>] | sync.sh remote \"<command>\""
         exit 1
     fi
 
