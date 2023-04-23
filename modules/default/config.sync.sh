@@ -2,7 +2,7 @@ SOURCE=
 DESTINATION=""
 SSH_KEY=
 
-#RSYNC_ARGS="--exclude-from excluded.sync"
+#RSYNC_ARGS="--exclude-from excluded.sync.sh"
 #SSH_ARGS=""
 
 # Defining a custom task :

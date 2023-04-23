@@ -63,7 +63,7 @@ __task_sync () {
     utils.info "Synchronizing §e'"$SOURCE"'§r to §e'"$DESTINATION"'§r :"
     echo
 
-    local rsync_command="rsync -Pav -r -e \"ssh -i $SSH_KEY\" $RSYNC_ARGS $SOURCE $DESTINATION"
+    local rsync_command="rsync -Pa -r -e \"ssh -i $SSH_KEY\" $RSYNC_ARGS $SOURCE $DESTINATION"
 
     local time_before=$(utils.nowms)
 
@@ -143,9 +143,7 @@ __task_remote () {
         local time_after=$(utils.nowms)
     else
         local time_before=$(utils.nowms)
-        x="ssh $SSH_ARGS -T -tt -i $SSH_KEY $(utils.destHost $DESTINATION) "'"cd $(eval echo \"'$destpath'\") ; '$cmd'"'
-        # echo $x
-        eval $x
+        eval "ssh $SSH_ARGS -T -tt -i $SSH_KEY $(utils.destHost $DESTINATION) "'"cd $(eval echo \"'$destpath'\") ; '$cmd'"'
         local time_after=$(utils.nowms)
     fi
 
@@ -162,7 +160,7 @@ remote () {
 #
 
 __task_shell () {
-    __exec 'exec \$SHELL -l'
+    __task_remote 'exec \$SHELL -l'
 }
 
 # 
@@ -171,19 +169,21 @@ __task_shell () {
 # |   MAIN   |
 # +----------+
 
+ARGS=("$@")
+
 main () {
-    if [ "$1" == "" ]; then
+    if [ "${ARGS[0]}" == "" ]; then
         utils.error "Syntax error : sync.sh [init | sync | shell | <taskname>] | sync.sh remote \"<command>\""
         exit 1
     fi
 
     first_arg=1
-    use_cmd_exec=0
+    use_remote_cmd=0
 
-    for arg in "$@"; do
-        if [ $use_cmd_exec -eq 1 ]; then
-            use_cmd_exec=0
-            __task_remote $arg
+    for arg in "${ARGS[@]}"; do
+        if [ $use_remote_cmd -eq 1 ]; then
+            use_remote_cmd=0
+            __task_remote "$arg"
         else
             if [ $first_arg -eq 0 ]; then
                 echo
@@ -199,9 +199,11 @@ main () {
 
             # 
 
-            if [[ "$taskname" == "init" || "$taskname" == "sync" || "$taskname" == "remote" || "$taskname" == "shell" ]]; then
+            if [[ "$taskname" == "init" || "$taskname" == "sync" || "$taskname" == "shell" ]]; then
                 utils.info "§lTask §b§l${taskname}§r"
                 eval __task_$taskname
+            elif [ "$taskname" == "remote" ]; then
+                use_remote_cmd=1
             else
                 local taskvalue=$(utils.taskvalue $taskname)
 
@@ -217,4 +219,4 @@ main () {
     done
 }
 
-main $@
+main
