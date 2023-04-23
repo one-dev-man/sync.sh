@@ -22,6 +22,8 @@ There's 4 main commands :
 
  After, depending of your project configuration, you could execute some other commands called `tasks`.
 
+/!\ Note that you can chain the commands, by example, you can do `sync.sh sync remote "mkdir test" build`.
+
 ## Configuration
 
 <details open>
