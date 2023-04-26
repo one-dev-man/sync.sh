@@ -19,7 +19,7 @@ Please note that if you want to automate installation/uninstallation, you can us
 The main usage is describe when you call `sync.sh`.
 
 There's 4 main commands :
- - `init` -  initialize a new `sync.sh` project configuration (see [config section](#configuration))
+ - `init` -  initialize a new `sync.sh` project configuration (see [configuration section](#configuration))
  - `sync` - launch an `rsync` synchronization from the specified source/project directory and the remote destination directory.
  - `remote` - allows you to send a remote command through `ssh`. The command will be executed in the specified source/project directory.
  - `shell` - allows you to open a remote shell through `ssh` (also the basic usage of `ssh` by the way).
@@ -28,10 +28,31 @@ There's 4 main commands :
 
 /!\ Note that you can chain the commands, by example, you can do `sync.sh sync remote "mkdir test" build`.
 
+`sync.sh` also includes some options :
+
+| option                          | description                                                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `-f`, `--force`                 | This option indicates to all commands used in the same `sync.sh` call to force their action (works only on [commands supporting it](#option-support)). |
+| `-ipath`, `--installation-path` | Prints the current used installation path.                                                                                              |
+
+<details id="option-support" open>
+    <summary>Option support</summary>
+
+<hr>
+
+At this time, only the native command `init` support it.
+
+<hr>
+</details>
+
+<br>
+
 ## Configuration
 
 <details open>
     <summary>Required configuration keys</summary>
+
+<hr>
 
 There's three required configuration key :
 
@@ -41,12 +62,15 @@ There's three required configuration key :
 | DESTINATION | `string` | Path of the remote project destination directory.                          |
 | SSH_KEY     | `string` | Path to the ssh key to use when synchronizing and execute remote commands. |
 
+<hr>
 </details>
 
 <br>
 
 <details>
     <summary>Optional configuration keys</summary>
+
+<hr>
 
 There's two optional configuration key :
 
@@ -55,12 +79,15 @@ There's two optional configuration key :
 | RSYNC_ARGS | `string` | Some additionnal `rsync` command arguments. |
 | SSH_ARGS   | `string` | Some additionnal `ssh` command arguments.   |
 
+<hr>
 </details>
 
 <br>
 
 <details open>
     <summary>Tasks</summary>
+
+<hr>
 
 Also you can define custom tasks (like `npm` scripts) :
 
@@ -78,6 +105,7 @@ TASK_BUILD="echo build task ; remote \"mvn package\""
 ```
 You can call this task with `sync.sh build` and it will first print `build task` in terminal and then execute `mvn package` into the destination directory.
 
+<hr>
 </details>
 
 ## Contributors

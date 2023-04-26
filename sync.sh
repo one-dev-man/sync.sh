@@ -217,6 +217,10 @@ main () {
             taskname="${taskname//_/-}"
 
             case $taskname in
+                -ipath | --installation-path )
+                    local installation_path="$(dirname "$(readlink /bin/sync.sh)")"
+                    echo "$installation_path"
+                    ;;
                 -* )
                     ;;
                 * )
