@@ -2,13 +2,17 @@
 
 `sync.sh` is a bash tool to synchronize a project between its source (dev) and its destination (maybe deploy, test server, ...)
 
-## Install
+## Install / uninstall
 
-First, be sure to use a linux distribution such as Ubuntu (quite obvious but important).
+First, be sure to use a UNIX-based distribution such as Ubuntu (quite obvious but important).
 
 Then clone this repository where you want to store the installation on your computer and launch the `install.sh` script.
 
 Now you should be able to use `sync.sh` in any shell.
+
+Same for uninstalling `sync.sh` : juste launch the `uninstall.sh` script.
+
+Please note that if you want to automate installation/uninstallation, you can use `-f`/`--force` to force it and/or `-q`/`--quiet` to disabling hte output.
 
 ## Usage
 

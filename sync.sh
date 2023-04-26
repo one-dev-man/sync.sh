@@ -1,11 +1,11 @@
 #!/bin/bash
 
 scriptdir () {
-  local scriptdir='$(printf %q "$(echo $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ))")'
-  if [[ -L "$(eval echo "$scriptdir/sync.sh")" ]]; then
-      scriptdir='$(printf %q "$(echo $( cd -- "$( dirname -- "$(readlink -f "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd ))")'
-  fi
-  eval echo $scriptdir
+    local scriptdir='$(printf %q "$(echo $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd ))")'
+    if [[ -L "$(eval echo "$scriptdir/sync.sh")" ]]; then
+        scriptdir='$(printf %q "$(echo $( cd -- "$( dirname -- "$(readlink -f "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd ))")'
+    fi
+    eval echo $scriptdir
 }
 
 SCRIPTDIR=$(scriptdir)
@@ -13,20 +13,20 @@ PWD=$(printf %q "$(pwd)")
 
 # 
 
-eval source $SCRIPTDIR/modules/utils.sh
+source "$(eval echo $SCRIPTDIR/modules/utils.sh)"
 
 # 
 
 DEFAULT_CONFIGFILE=$SCRIPTDIR/modules/default/config.sync.sh
-CURRENT_CONFIGFILE=./config.sync.sh
+CURRENT_CONFIGFILE=$PWD/config.sync.sh
 
 loadconfig () {
-    if utils.fileExists $CURRENT_CONFIGFILE; then
+    if ! utils.fileExists $(eval echo $CURRENT_CONFIGFILE); then
         utils.info "Configuration file not found. Try to create a new one with §esync.sh init§r !"
         exit 1
     fi
 
-    eval source $CURRENT_CONFIGFILE
+    source "$(eval echo $CURRENT_CONFIGFILE)"
 
     # 
 
@@ -50,9 +50,37 @@ loadconfig () {
 # 
 
 __task_init () {
-    utils.info "Initializing §async.sh§r configuration in §e$PWD§r..."
+    if utils.fileExists $(eval echo $CURRENT_CONFIGFILE); then
+        local invalid_askresp=1
+
+        for arg in "${ARGS[@]}"; do
+            case ${arg,,} in
+                -f | --force )
+                    invalid_askresp=0;;
+                * ) ;;
+            esac
+        done
+
+        if [ $invalid_askresp -eq 1 ]; then
+            utils.info "Configuration file already exists. Do you want to reset it ? [§8Y§r/§8n§r] : " $(utils.NONE)
+            local askresp=$(utils.input)
+
+            while [ $invalid_askresp -eq 1 ]; do
+                case ${askresp,,} in
+                    y | yes )
+                        invalid_askresp=0;;
+                    n | no )
+                        exit;;
+                    * )
+                        utils.warn 'Invalid response, please try again.';;
+                esac
+            done
+        fi
+    fi
+
+    utils.info "Initializing §async.sh§r configuration in §e\"$(eval echo $PWD)\"§r..."
     
-    eval cp "$DEFAULT_CONFIGFILE" "$PWD"
+    cp "$(eval echo $DEFAULT_CONFIGFILE)" "$(eval echo $PWD)"
 
     utils.info "Done !"
 }
@@ -60,10 +88,10 @@ __task_init () {
 # 
 
 __task_sync () {
-    utils.info "Synchronizing §e'"$SOURCE"'§r to §e'"$DESTINATION"'§r :"
+    utils.info "Synchronizing §e\""$(eval echo $SOURCE)"\"§r to §e\""$DESTINATION"\"§r :"
     echo
 
-    local rsync_command="rsync -Pa -r -e \"ssh -i $SSH_KEY\" $RSYNC_ARGS $SOURCE $DESTINATION"
+    local rsync_command='rsync -Pa -r -e '"'"'ssh -i "'"$SSH_KEY"'"'"'"' '"$RSYNC_ARGS"' "'"$(eval echo $SOURCE)"'" "'"$DESTINATION"'"'
 
     local time_before=$(utils.nowms)
 
@@ -115,7 +143,7 @@ __task_sync () {
     elif [ $sync_status -eq 35 ]; then
         utils.error "Timeout waiting for daemon connection."
     elif [ $sync_status -eq 255 ]; then
-        utils.error "Connection refused to §e$(utils.destHost $DESTINATION)§r"
+        utils.error "Connection refused to §e\"$(utils.destHost $DESTINATION)\"§r"
     else
         utils.error "Internal error."
     fi
@@ -132,18 +160,18 @@ __task_sync () {
 __task_remote () {
     local cmd="$@"
 
-    utils.info "Executing §d$cmd§r command into destination §e'"$DESTINATION"'§r :"
+    utils.info "Executing §d\"$cmd\"§r command into destination §e\""$DESTINATION"\"§r :"
     echo
 
     local destpath=$(utils.destPath $DESTINATION)
 
     if [ "$(utils.destHost $DESTINATION)" == "" ]; then
         local time_before=$(utils.nowms)
-        eval 'cd $destpath ; $cmd'
+        eval 'cd "'"$(eval echo $destpath)"'" ; $cmd'
         local time_after=$(utils.nowms)
     else
         local time_before=$(utils.nowms)
-        eval "ssh $SSH_ARGS -T -tt -i $SSH_KEY $(utils.destHost $DESTINATION) "'"cd $(eval echo \"'$destpath'\") ; '$cmd'"'
+        eval 'ssh '"$SSH_ARGS"' -T -tt -i "'"$SSH_KEY"'" '"$(utils.destHost $DESTINATION)"' '"'"'cd "$(eval echo "'"$destpath"'")" ; '"$cmd""'"
         local time_after=$(utils.nowms)
     fi
 
@@ -160,7 +188,7 @@ remote () {
 #
 
 __task_shell () {
-    __task_remote 'exec \$SHELL -l'
+    __task_remote 'exec $SHELL -l'
 }
 
 # 
@@ -177,7 +205,7 @@ main () {
         exit 1
     fi
 
-    first_arg=1
+    first_task=1
     use_remote_cmd=0
 
     for arg in "${ARGS[@]}"; do
@@ -185,36 +213,45 @@ main () {
             use_remote_cmd=0
             __task_remote "$arg"
         else
-            if [ $first_arg -eq 0 ]; then
-                echo
-            else
-                first_arg=0
-            fi
-            
-            local taskname="$arg"
+            local taskname="${arg,,}"
+            taskname="${taskname//_/-}"
 
-            if ! [ "$taskname" == "init" ]; then
-                loadconfig
-            fi
+            case $taskname in
+                -* )
+                    ;;
+                * )
+                    if [ $first_task -eq 0 ]; then
+                        echo
+                    else
+                        first_task=0
+                    fi
 
-            # 
+                    # 
 
-            if [[ "$taskname" == "init" || "$taskname" == "sync" || "$taskname" == "shell" ]]; then
-                utils.info "§lTask §b§l${taskname}§r"
-                eval __task_$taskname
-            elif [ "$taskname" == "remote" ]; then
-                use_remote_cmd=1
-            else
-                local taskvalue=$(utils.taskvalue $taskname)
+                    if ! [ "$taskname" == "init" ]; then
+                        loadconfig
+                    fi
 
-                if [ "$taskvalue" == "" ]; then
-                    utils.error "§4Task §e$taskname§4 not found."
-                    exit 1
-                else
-                    utils.info "§lTask §b§l${taskname}§r"
-                    eval $taskvalue
-                fi
-            fi
+                    # 
+
+                    if [[ "$taskname" == "init" || "$taskname" == "sync" || "$taskname" == "shell" ]]; then
+                        utils.info "§lTask §b§l${taskname}§r"
+                        eval __task_$taskname
+                    elif [ "$taskname" == "remote" ]; then
+                        use_remote_cmd=1
+                    else
+                        local taskvalue=$(utils.taskvalue "$taskname")
+
+                        if [ "$taskvalue" == "" ]; then
+                            utils.error "§4Task §e$taskname§4 not found."
+                            exit 1
+                        else
+                            utils.info "§lTask §b§l${taskname}§r"
+                            eval $taskvalue
+                        fi
+                    fi
+                    ;;
+            esac
         fi
     done
 }
